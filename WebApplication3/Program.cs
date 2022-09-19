@@ -57,9 +57,8 @@ app.Run(async (context) =>
         await DeleteImage(response, request);
     }
     else
-    {
-        response.StatusCode = 400;
-        await response.WriteAsync("Wrong data!");
+    {        
+        await response.WriteAsync("Server");
     }
 });
 
