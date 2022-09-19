@@ -129,7 +129,7 @@ async Task UpdateImage(HttpResponse response, HttpRequest request)
 
             images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
 
-            bool waImageUpdated = false;
+            bool wasImageUpdated = false;
 
             for (int i = 0; i < images.Count; i++)
             {
@@ -146,12 +146,12 @@ async Task UpdateImage(HttpResponse response, HttpRequest request)
                     sw.Write(jsonString);
                     sw.Close();
 
-                    waImageUpdated = true;
+                    wasImageUpdated = true;
                     break;
                 }
             }            
 
-            if (!waImageUpdated)
+            if (!wasImageUpdated)
             {
                 response.StatusCode = 404;
                 await response.WriteAsync("Item was not found!");
