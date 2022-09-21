@@ -11,6 +11,8 @@ var app = builder.Build();
 
 List<MyImage> images = new List<MyImage>();
 
+String fileWithImages = "data/images.txt";
+
 app.Run(async (context) =>
 {    
     var response = context.Response;
@@ -19,27 +21,15 @@ app.Run(async (context) =>
    
     if (path == "/api/images" && request.Method == "GET")
     {
-        StreamReader sr = new StreamReader("data/images.txt");       
-        string jsonString = sr.ReadLine();
-        sr.Close();
+        string jsonString = getFileInformation(fileWithImages);
 
         if (jsonString != null)
         {
             images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
 
-            images.Sort((x, y) => x.Id.CompareTo(y.Id));
+            //images.Sort((x, y) => x.Id.CompareTo(y.Id));            
 
-            for (int i = 0; i < images.Count; i++)
-            {
-                var image = images[i];
-                image.Id = i + 1;
-            }
-
-            jsonString = JsonSerializer.Serialize(images);
-
-            StreamWriter sw = new StreamWriter("data/images.txt", false, Encoding.ASCII);
-            sw.Write(jsonString);
-            sw.Close();
+            jsonString = JsonSerializer.Serialize(images);            
         }        
        
         await response.WriteAsync(jsonString);
@@ -71,33 +61,24 @@ async Task CreateImage(HttpResponse response, HttpRequest request)
         MyImage? newImage = await request.ReadFromJsonAsync<MyImage>();        
 
         if (newImage != null)
-        {
-            string fileName = "data/images.txt";
-            StreamReader sr = new StreamReader(fileName);
-            string? jsonString = sr.ReadLine();
-            sr.Close();
+        {            
+            string jsonString = getFileInformation(fileWithImages);
+
+            String id = Guid.NewGuid().ToString();
+            newImage.Id = id;
 
             if (jsonString != null)
             {
                 images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
-
-                images.Sort((x, y) => x.Id.CompareTo(y.Id));
-
-                newImage.Id = images[images.Count - 1].Id + 1;
             }
             else
             {
                 images = new List<MyImage>();
-                newImage.Id = 1;
             }                        
 
             images.Add(newImage);
 
-            jsonString = JsonSerializer.Serialize(images);
-
-            StreamWriter sw = new StreamWriter(fileName, false, Encoding.ASCII);
-            sw.Write(jsonString);
-            sw.Close();
+            updateFileInformation(images, fileWithImages);
 
             await response.WriteAsJsonAsync(newImage.Id);
         }
@@ -121,10 +102,7 @@ async Task UpdateImage(HttpResponse response, HttpRequest request)
 
         if (imageToUpdate != null)
         {
-            string fileName = "data/images.txt";
-            StreamReader sr = new StreamReader(fileName);
-            string jsonString = sr.ReadLine();
-            sr.Close();
+            string jsonString = getFileInformation(fileWithImages);
 
             images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
 
@@ -139,11 +117,7 @@ async Task UpdateImage(HttpResponse response, HttpRequest request)
                     item.Name = imageToUpdate.Name;
                     item.Content = imageToUpdate.Content;
 
-                    jsonString = JsonSerializer.Serialize(images);
-
-                    StreamWriter sw = new StreamWriter(fileName, false, Encoding.ASCII);
-                    sw.Write(jsonString);
-                    sw.Close();
+                    updateFileInformation(images, fileWithImages);
 
                     wasImageUpdated = true;
                     break;
@@ -174,14 +148,9 @@ async Task DeleteImage(HttpResponse response, HttpRequest request)
     {
         var path = request.Path;
 
-        string? stringId = path.Value?.Split("/")[3];
+        string? id = path.Value?.Split("/")[3];
 
-        int id = int.Parse(stringId);
-
-        string fileName = "data/images.txt";
-        StreamReader sr = new StreamReader(fileName);
-        string jsonString = sr.ReadLine();
-        sr.Close();
+        string jsonString = getFileInformation(fileWithImages);
 
         if (jsonString != null)
         {
@@ -191,21 +160,10 @@ async Task DeleteImage(HttpResponse response, HttpRequest request)
 
             if (imageToDelete != null)
             {
-                images.Remove(imageToDelete);
+                images.Remove(imageToDelete);                
 
-                if (images.Count == 0)
-                {
-                    jsonString = "";
-                }
-                else
-                {
-                    jsonString = JsonSerializer.Serialize(images);
-                }            
+                updateFileInformation(images, fileWithImages);
 
-                StreamWriter sw = new StreamWriter(fileName, false, Encoding.ASCII);
-                sw.Write(jsonString);
-                sw.Close();
-            
                 await response.WriteAsync(imageToDelete.Name);
             }        
             else
@@ -222,9 +180,31 @@ async Task DeleteImage(HttpResponse response, HttpRequest request)
     }
 }
 
+string getFileInformation(string path)
+{    
+    StreamReader sr = new StreamReader(path);
+    string jsonString = sr.ReadLine();
+    sr.Close();
+    return jsonString;
+}
+
+void updateFileInformation(List<MyImage> images, string path)
+{
+    string jsonString = "";
+
+    if (images.Count != 0)
+    {
+        jsonString = JsonSerializer.Serialize(images);
+    }
+
+    StreamWriter sw = new StreamWriter(path, false, Encoding.ASCII);
+    sw.Write(jsonString);
+    sw.Close();
+}
+
 public class MyImage
 {
-    public int Id { get; set; } = 0;
+    public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string Content { get; set; } = "";
 }
