@@ -21,16 +21,7 @@ app.Run(async (context) =>
    
     if (path == "/api/images" && request.Method == "GET")
     {
-        string jsonString = getFileInformation(fileWithImages);
-
-        if (jsonString != null)
-        {
-            images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
-
-            //images.Sort((x, y) => x.Id.CompareTo(y.Id));            
-
-            jsonString = JsonSerializer.Serialize(images);            
-        }        
+        string jsonString = getFileInformation(fileWithImages);        
        
         await response.WriteAsync(jsonString);
     }
@@ -80,7 +71,7 @@ async Task CreateImage(HttpResponse response, HttpRequest request)
 
             updateFileInformation(images, fileWithImages);
 
-            await response.WriteAsJsonAsync(newImage.Id);
+            await response.WriteAsync(JsonSerializer.Serialize(newImage));
         }
         else
         {
@@ -120,6 +111,7 @@ async Task UpdateImage(HttpResponse response, HttpRequest request)
                     updateFileInformation(images, fileWithImages);
 
                     wasImageUpdated = true;
+                    await response.WriteAsync(JsonSerializer.Serialize(imageToUpdate));
                     break;
                 }
             }            
@@ -164,7 +156,7 @@ async Task DeleteImage(HttpResponse response, HttpRequest request)
 
                 updateFileInformation(images, fileWithImages);
 
-                await response.WriteAsync(imageToDelete.Name);
+                await response.WriteAsync(imageToDelete.Id);
             }        
             else
             {
@@ -190,12 +182,7 @@ string getFileInformation(string path)
 
 void updateFileInformation(List<MyImage> images, string path)
 {
-    string jsonString = "";
-
-    if (images.Count != 0)
-    {
-        jsonString = JsonSerializer.Serialize(images);
-    }
+    string jsonString = JsonSerializer.Serialize(images);
 
     StreamWriter sw = new StreamWriter(path, false, Encoding.ASCII);
     sw.Write(jsonString);
@@ -206,5 +193,5 @@ public class MyImage
 {
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
-    public string Content { get; set; } = "";
+    public string Content { get; set; } = "";   
 }
