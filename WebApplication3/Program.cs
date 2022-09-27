@@ -140,23 +140,38 @@ async Task DeleteImage(HttpResponse response, HttpRequest request)
     {
         var path = request.Path;
 
-        string? id = path.Value?.Split("/")[3];
+        List<string> ids = new List<string>( path.Value?.Split("/")[3].Split("_"));
 
         string jsonString = getFileInformation(fileWithImages);
 
         if (jsonString != null)
         {
             images = JsonSerializer.Deserialize<List<MyImage>>(jsonString)!;
-            
-            MyImage? imageToDelete = images.FirstOrDefault((item) => item.Id == id);
 
-            if (imageToDelete != null)
+            List<MyImage> imagesToDelete = new List<MyImage>();
+
+            List<string> idsOfDeletedItems = new List<string>();    
+
+            foreach (string id in ids)
             {
-                images.Remove(imageToDelete);                
+                MyImage? imageToDelete = images.FirstOrDefault((item) => item.Id == id);
+                bool deleted = images.Remove(imageToDelete);
 
+                if (deleted)
+                {
+                    idsOfDeletedItems.Add(id);
+                }
+            }
+            
+            
+
+            if (idsOfDeletedItems.Count > 0)
+            {     
                 updateFileInformation(images, fileWithImages);
 
-                await response.WriteAsync(imageToDelete.Id);
+                string idsOfDeletedItemsString = string.Join("_", idsOfDeletedItems);
+
+                await response.WriteAsync(idsOfDeletedItemsString);
             }        
             else
             {
@@ -194,4 +209,5 @@ public class MyImage
     public string Id { get; set; } = "";
     public string Name { get; set; } = "";
     public string Content { get; set; } = "";
+    public bool isChecked { get; set; } = false;
 }
